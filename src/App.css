@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+#root {
+  max-width: 1280px;
+  margin: 0;padding: 0;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+body{
+  background-color: rgb(32, 40, 51) !important;
+  color: white !important;
+}
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+.navbartop{
+  top:0 !important;
+   background-color: #313a41 !important;
+  color: white !important;
+}
