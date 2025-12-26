@@ -28,7 +28,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 
 
 import CardNote from './CardNote.jsx';
-import { useContext,useEffect } from 'react';
+import { useContext, useEffect } from 'react';
 import MainContext from '../ContextFolder/MainContext.jsx';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -39,7 +39,7 @@ const drawerWidth = 150;
 function ResponsiveDrawer(props) {
 
   const { notes, setNotes } = useContext(MainContext);
-  const [search , setSearch] = React.useState("");
+  const [search, setSearch] = React.useState("");
 
 
 
@@ -66,33 +66,54 @@ function ResponsiveDrawer(props) {
   //new dirawer content
   const [inputval, setInputval] = React.useState({ title: "", content: "" });
   const [open, setOpen] = React.useState(false);
+  
+  
+    const handleClose = () => {
+      setOpen(false);
+    };
+
+    const handleInputNewNote = (e) => {
+      e.preventDefault();
+      const newNote = {
+        id: uuidv4(),
+        title: inputval.title,
+        content: inputval.content,
+        complated: false
+      };
+      const updatedNotes = [...notes, newNote];
+      setNotes(updatedNotes);
+      setInputval({ title: "", content: "" });
+      handleClose();
+      setOpen(false)
+      localStorage.setItem("notes",JSON.stringify(updatedNotes))
+    }
+
+
+  // function handleClickEnter(e) {
+  //   if (e.key === "Enter") {
+  //      setOpen(!open)
+  //   }
+  // }
+
+
+  // useEffect(() => { document.addEventListener('keyup', handleClickEnter) });
+
+
+
   const handleClickOpen = () => {
     setOpen(true);
+
+
   };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
- const handleInputNewNote = (e) => {
-    e.preventDefault();
-    const newNote = {
-      id: uuidv4(),
-      title: inputval.title,  
-      content: inputval.content
-    };
-    const updatedNotes = [...notes, newNote];
-    setNotes(updatedNotes);
-
-
-    localStorage.setItem('notes', JSON.stringify(updatedNotes));
-    setInputval({ title: "", content: "" });
-    handleClose();
-  }
 
   
-useEffect(() => { JSON.parse(localStorage.getItem('notes'));  }, []);
 
+  useEffect(()=>{
+    const saved=localStorage.getItem("notes");
+    if(saved){
+      setNotes(JSON.parse(saved))
+    }
+  },[])
 
 
 
@@ -107,16 +128,13 @@ useEffect(() => { JSON.parse(localStorage.getItem('notes'));  }, []);
       <Toolbar />
       <Divider className='mb-5' sx={{ marginTop: "30px" }} />
       <List >
-        {['All', 'Tag', 'Drafts'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
+        <ListItem><ListItemButton>all nots</ListItemButton> </ListItem>
+      <Divider className='mb-5' sx={{ marginTop: "30px" }} />
+
+        <ListItem> <ListItemButton>checked notes</ListItemButton></ListItem>
+      <Divider className='mb-5' sx={{ marginTop: "30px" }} />
+
+        <ListItem><ListItemButton>deleted notes</ListItemButton> </ListItem>
       </List>
       <Divider />
     </div>
@@ -126,7 +144,7 @@ useEffect(() => { JSON.parse(localStorage.getItem('notes'));  }, []);
   const container = window !== undefined ? () => window().document.body : undefined;
 
   return (
-    <>
+    <div className='top'>
       <Button variant="outlined" onClick={handleClickOpen}>
         Open form dialog
       </Button>
@@ -193,8 +211,8 @@ useEffect(() => { JSON.parse(localStorage.getItem('notes'));  }, []);
             </IconButton>
             <Typography variant="h6" noWrap component="div">
               <input
-              value={search}
-              onChange={(e)=>setSearch(e.target.value)}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 type="text"
                 placeholder="Search..."
                 class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-white-500 focus:border-white-500 focus:outline-none shadow-sm placeholder-gray-400 transition-all duration-200"
@@ -240,18 +258,18 @@ useEffect(() => { JSON.parse(localStorage.getItem('notes'));  }, []);
           </Drawer>
         </Box>
         <Toolbar />
-        <Box className="grid grid-cols-1 sm:grid-cols-3 items-center justify-content-between gap-2  mt-10 position-relative" ent="main"
+        <Box className="cardnotes  grid grid-cols-1sm:grid-cols-2  md:grid-cols-3 gap-4 items-center justify-content-between  mt-10 position-relative" ent="main"
           sx={{ flexGrow: 1, p: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
         >
           {/* Main content goes here */}
 
           {notes.filter((note) => note.title.toLowerCase().includes(search.toLowerCase())).map((note) => (
             <CardNote key={note.id} note={note} />
-          ))} 
+          ))}
 
         </Box>
       </Box>
-    </>
+    </div>
 
   );
 }

@@ -9,6 +9,7 @@
 body{
   background-color: rgb(32, 40, 51) !important;
   color: white !important;
+  height: 100vmax;
 }
 .App {
   font-family: sans-serif;

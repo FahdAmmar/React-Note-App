@@ -10,43 +10,66 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 
 import * as React from 'react';
-import { useState,useContext } from 'react';
-import MainContext from '../ContextFolder/MainContext.jsx'; 
+import { useState, useContext } from 'react';
+import MainContext from '../ContextFolder/MainContext.jsx';
+
+import Checkbox from '@mui/material/Checkbox';
+
+const label = { slotProps: { input: { 'aria-label': 'Checkbox demo' } } };
 
 
 
 
 
 
-export default function CardNote({note}) {
+
+
+export default function CardNote({ note }) {
   const { notes, setNotes } = useContext(MainContext);
 
- const handleDeletClick=()=>{
-    const updatedNotes = notes.filter((n) => n.id !== note.id);
-    setNotes(updatedNotes);
-    localStorage.setItem('notes', JSON.stringify(updatedNotes));
+
+  function handleCheckedClick() {
+    const update = notes.map((n) => {
+      if (n.id === note.id) {
+        return { ...n, complated: !n.complated }
+      }
+      return n
+    })
+    setNotes(update)
+    localStorage.setItem("notes", JSON.stringify(update))
+
+
   }
 
 
-  const colorNote =["#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9", "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB", "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3", "#FFE0B2", "#FFCCBC"];
+
+
+  const handleDeletClick = () => {
+    const updatedNotes = notes.filter((n) => n.id !== note.id);
+    setNotes(updatedNotes);
+    localStorage.setItem("notes", JSON.stringify(updatedNotes))
+
+  }
+
 
 
   return (
-    <Card sx={{ maxWidth: 200, marginBottom:.5 ,marginTop:.5, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', borderRadius: '15px',maxHeight:"200px", backgroundColor: colorNote[Math.floor(Math.random() * colorNote.length)]}}>
+    <Card className= "w-full h-auto object-cover" sx={{ marginBottom: .5, marginTop: .5, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', borderRadius: '15px' }}>
       <CardActionArea>
         <CardContent>
-          <Typography gutterBottom variant="h5" component="div">
+          <Typography gutterBottom variant="h5" component="div" sx={{ textDecoration: note.complated ? 'line-through' : "" }}>
             {note.title}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary',overflowY:"auto", maxHeight:"100px" }}>   
+          <Typography variant="body2" sx={{ color: 'text.secondary', overflowY: "auto", maxHeight: "100px", textDecoration: note.complated ? 'line-through' : "" }} >
             {note.content}
           </Typography>
         </CardContent>
-           <CardActions className=' h-10 flex justify-end'>
-                <IconButton  aria-label="delete" size="large">
-        <DeleteIcon className='text-red-700 hover:text-red-500' fontSize="inherit"  onClick={handleDeletClick}/>
-      </IconButton>
-      </CardActions>
+        <CardActions className=' h-10 flex justify-end items-end'>
+          <IconButton aria-label="delete" size="large">
+            <Checkbox {...label} defaultChecked color="success" checked={note.complated} onChange={handleCheckedClick} />
+            <DeleteIcon className='text-red-700 hover:text-red-500' fontSize="inherit" onClick={handleDeletClick} />
+          </IconButton>
+        </CardActions>
       </CardActionArea>
     </Card>
   );
