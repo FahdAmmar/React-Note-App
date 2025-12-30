@@ -37,6 +37,9 @@ export default function CardNote({ note }) {
     })
     setNotes(update)
     localStorage.setItem("notes", JSON.stringify(update))
+    console.log(new Date().toLocaleDateString())
+    console.log(new Date().toLocaleString())
+
 
 
   }
@@ -64,11 +67,14 @@ export default function CardNote({ note }) {
             {note.content}
           </Typography>
         </CardContent>
-        <CardActions className=' h-10 flex justify-end items-end'>
+        <CardActions className=' h-10 flex  items-center justify-between w-full '>
+          <div className="time font-light text-[.5rem] inline-flex self-start text-gray-200">{note.time}</div>
+            <div class="flex space-x-4">
           <IconButton aria-label="delete" size="large">
             <Checkbox {...label} defaultChecked color="success" checked={note.complated} onChange={handleCheckedClick} />
-            <DeleteIcon className='text-red-700 hover:text-red-500' fontSize="inherit" onClick={handleDeletClick} />
+            <DeleteIcon className='text-red-700 hover:text-red-500 ' fontSize="inherit" onClick={handleDeletClick} />
           </IconButton>
+          </div>
         </CardActions>
       </CardActionArea>
     </Card>

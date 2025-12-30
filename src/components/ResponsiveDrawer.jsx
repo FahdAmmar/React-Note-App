@@ -6,13 +6,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
-import InboxIcon from '@mui/icons-material/MoveToInbox';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import MailIcon from '@mui/icons-material/Mail';
 import MenuIcon from '@mui/icons-material/Menu';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -25,7 +18,18 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 
-
+import {
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+} from '@mui/material';
+import {
+  Notes as AllNotesIcon,
+  CheckCircle as CheckedIcon,
+  RadioButtonUnchecked as NotCheckedIcon,
+} from '@mui/icons-material';
 
 import CardNote from './CardNote.jsx';
 import { useContext, useEffect } from 'react';
@@ -40,6 +44,20 @@ function ResponsiveDrawer(props) {
 
   const { notes, setNotes } = useContext(MainContext);
   const [search, setSearch] = React.useState("");
+  const [filter, setFilter] = React.useState("all")
+
+  const compleated=notes.filter((note)=> note.complated)
+  const notCompleated=notes.filter((note)=> !note.complated)
+
+  let allNotes=notes
+  if(filter==="completed"){
+    allNotes=compleated
+  }else if(filter==="notcompleted"){
+    allNotes=notCompleated
+  }
+console.log(`fliter is ${filter}`)
+  console.log(allNotes)
+
 
 
 
@@ -66,27 +84,28 @@ function ResponsiveDrawer(props) {
   //new dirawer content
   const [inputval, setInputval] = React.useState({ title: "", content: "" });
   const [open, setOpen] = React.useState(false);
-  
-  
-    const handleClose = () => {
-      setOpen(false);
-    };
 
-    const handleInputNewNote = (e) => {
-      e.preventDefault();
-      const newNote = {
-        id: uuidv4(),
-        title: inputval.title,
-        content: inputval.content,
-        complated: false
-      };
-      const updatedNotes = [...notes, newNote];
-      setNotes(updatedNotes);
-      setInputval({ title: "", content: "" });
-      handleClose();
-      setOpen(false)
-      localStorage.setItem("notes",JSON.stringify(updatedNotes))
-    }
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleInputNewNote = (e) => {
+    e.preventDefault();
+    const newNote = {
+      id: uuidv4(),
+      title: inputval.title,
+      content: inputval.content,
+      complated: false,
+      time: new Date().toLocaleString()
+    };
+    const updatedNotes = [...notes, newNote];
+    setNotes(updatedNotes);
+    setInputval({ title: "", content: "" });
+    handleClose();
+    setOpen(false)
+    localStorage.setItem("notes", JSON.stringify(updatedNotes))
+  }
 
 
   // function handleClickEnter(e) {
@@ -106,16 +125,22 @@ function ResponsiveDrawer(props) {
 
   };
 
-  
 
-  useEffect(()=>{
-    const saved=localStorage.getItem("notes");
-    if(saved){
+
+  useEffect(() => {
+    const saved = localStorage.getItem("notes");
+    if (saved) {
       setNotes(JSON.parse(saved))
     }
-  },[])
+  }, [])
 
 
+  
+  const menuItems = [
+    { text: 'All notes', value: 'all', icon: <AllNotesIcon /> },
+    { text: 'Checked', value: 'completed', icon: <CheckedIcon /> },
+    { text: 'Not Checked', value: 'notcompleted', icon: <NotCheckedIcon /> },
+  ];
 
 
   const drawer = (
@@ -127,16 +152,27 @@ function ResponsiveDrawer(props) {
 
       <Toolbar />
       <Divider className='mb-5' sx={{ marginTop: "30px" }} />
-      <List >
-        <ListItem><ListItemButton>all nots</ListItemButton> </ListItem>
-      <Divider className='mb-5' sx={{ marginTop: "30px" }} />
 
-        <ListItem> <ListItemButton>checked notes</ListItemButton></ListItem>
-      <Divider className='mb-5' sx={{ marginTop: "30px" }} />
 
-        <ListItem><ListItemButton>deleted notes</ListItemButton> </ListItem>
+
+      <List className='text-[0.5rem]' value={filter} onChange={(e)=>setFilter(e.target.value)}>
+        {menuItems.map((item) => (
+          <ListItem key={item.value} disablePadding>
+            <ListItemButton
+              selected={filter === item.value}
+              onClick={() => setFilter(item.value)}
+              value={item.value}
+            >
+              <ListItemIcon>
+                {item.icon}
+              </ListItemIcon>
+              <ListItemText primary={item.text} />
+            </ListItemButton>
+          </ListItem>
+        ))}
       </List>
-      <Divider />
+
+
     </div>
   );
 
@@ -263,7 +299,7 @@ function ResponsiveDrawer(props) {
         >
           {/* Main content goes here */}
 
-          {notes.filter((note) => note.title.toLowerCase().includes(search.toLowerCase())).map((note) => (
+          {allNotes.filter((note) => note.title.toLowerCase().includes(search.toLowerCase())).map((note) => (
             <CardNote key={note.id} note={note} />
           ))}
 

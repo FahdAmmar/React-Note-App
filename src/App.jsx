@@ -11,35 +11,10 @@ const info = [
     id: 1,
     title: "Sample Note 1",
     content: "This is the content of sample note 1.",
-    complated: false
+    complated: false,
+    time:""
   },
-  {
-    id: 2,
-    title: "Sample Note 2",
-    content: "This is the content of sample note 2.",
-    complated: false
-
-  },
-  {
-    id: 3,
-    title: "Sample Note 3",
-    content: "This is the content of sample note 3.",
-    complated: false
-
-  },
-  {
-    id: 4,
-    title: "Sample Note 4",
-    content: "This is the content of sample note 4.",
-    complated: false
-
-  }, {
-    id: 5,
-    title: "Sample Note 5",
-    content: "This is the content of sample note 5.",
-    complated: false
-
-  }
+ 
 ]
 
 
