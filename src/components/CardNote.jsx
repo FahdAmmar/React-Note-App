@@ -1,82 +1,159 @@
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CardMedia from '@mui/material/CardMedia';
-import Typography from '@mui/material/Typography';
-import Button from '@mui/material/Button';
-import CardActionArea from '@mui/material/CardActionArea';
-import CardActions from '@mui/material/CardActions';
-import IconButton from '@mui/material/IconButton';
-import DeleteIcon from '@mui/icons-material/Delete';
-
-
 import * as React from 'react';
-import { useState, useContext } from 'react';
-import MainContext from '../ContextFolder/MainContext.jsx';
-
-import Checkbox from '@mui/material/Checkbox';
-
-const label = { slotProps: { input: { 'aria-label': 'Checkbox demo' } } };
-
-
-
-
-
-
-
+import {
+  Card,
+  CardContent,
+  Typography,
+  CardActions,
+  IconButton,
+  Checkbox,
+  Tooltip,
+  Box,
+  useTheme
+} from '@mui/material';
+import {
+  Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  RadioButtonUnchecked as RadioButtonIcon,
+} from '@mui/icons-material';
+import { useState, useContext, useCallback } from 'react';
+import MainContext from '../ContextFolder/MainContext';
 
 export default function CardNote({ note }) {
   const { notes, setNotes } = useContext(MainContext);
+  const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
 
+  // تبديل حالة الإكمال
+  const handleToggleComplete = useCallback(() => {
+    setNotes(prevNotes => prevNotes.map(n => n.id === note.id ? { ...n, completed: !n.completed } : n));
+  }, [note.id, setNotes]);
 
-  function handleCheckedClick() {
-    const update = notes.map((n) => {
-      if (n.id === note.id) {
-        return { ...n, complated: !n.complated }
+  function handlechecked(id) {
+    const updatedNotes = notes.map((note) => {
+      if (note.id === id) {
+        return { ...note, completed: !note.completed };
       }
-      return n
-    })
-    setNotes(update)
-    localStorage.setItem("notes", JSON.stringify(update))
-    console.log(new Date().toLocaleDateString())
-    console.log(new Date().toLocaleString())
-
-
-
-  }
-
-
-
-
-  const handleDeletClick = () => {
-    const updatedNotes = notes.filter((n) => n.id !== note.id);
+      return note;
+    });
     setNotes(updatedNotes);
-    localStorage.setItem("notes", JSON.stringify(updatedNotes))
-
+    localStorage.setItem('notes', JSON.stringify(updatedNotes));
   }
 
+  // حذف الملاحظة
+  const handleDelete = useCallback(() => {
+    setNotes(prevNotes => prevNotes.filter(n => n.id !== note.id));
+  }, [note.id, setNotes]);
 
+  // تنسيق التاريخ
+  const formatDate = (dateString) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
 
   return (
-    <Card className= "w-full h-auto object-cover" sx={{ marginBottom: .5, marginTop: .5, boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)', borderRadius: '15px' }}>
-      <CardActionArea>
-        <CardContent>
-          <Typography gutterBottom variant="h5" component="div" sx={{ textDecoration: note.complated ? 'line-through' : "" }}>
-            {note.title}
+    <Card
+      sx={{
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: theme.shadows[4]
+        }
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      aria-label={`Note titled ${note.title}`}
+    >
+      <CardContent sx={{
+        flexGrow: 1,
+        pb: 1,
+        '&:last-child': { pb: 1 }
+      }}>
+        <Typography
+          variant="h6"
+          component="h2"
+          sx={{
+            fontWeight: 600,
+            mb: 1,
+            textDecoration: note.completed ? 'line-through' : 'none',
+            color: note.completed ? 'text.disabled' : 'text.primary'
+          }}
+        >
+          {note.title}
+        </Typography>
+
+        <Typography
+          variant="body1"
+          sx={{
+            color: note.completed ? 'text.disabled' : 'text.secondary',
+            whiteSpace: 'pre-wrap',
+            lineHeight: 1.6
+          }}
+        >
+          {note.content}
+        </Typography>
+      </CardContent>
+
+      <CardActions sx={{
+        p: 2,
+        justifyContent: 'space-between',
+        borderTop: '1px solid',
+        borderTopColor: 'divider'
+      }}>
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          color: 'text.secondary',
+          fontSize: '0.85rem'
+        }}>
+          <Typography component="time" dateTime={note.time}>
+            {formatDate(note.time)}
           </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', overflowY: "auto", maxHeight: "100px", textDecoration: note.complated ? 'line-through' : "" }} >
-            {note.content}
-          </Typography>
-        </CardContent>
-        <CardActions className=' h-10 flex  items-center justify-between w-full '>
-          <div className="time font-light text-[.5rem] inline-flex self-start text-gray-200">{note.time}</div>
-            <div class="flex space-x-4">
-          <IconButton aria-label="delete" size="large">
-            <Checkbox {...label} defaultChecked color="success" checked={note.complated} onChange={handleCheckedClick} />
-            <DeleteIcon className='text-red-700 hover:text-red-500 ' fontSize="inherit" onClick={handleDeletClick} />
-          </IconButton>
-          </div>
-        </CardActions>
-      </CardActionArea>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Tooltip title={note.completed ? "Mark as incomplete" : "Mark as complete"}>
+            <IconButton
+              onClick={() => { handlechecked(note.id); }}
+              aria-label={note.completed ? "Mark incomplete" : "Mark complete"}
+              size="small"
+            >
+              {note.completed ? (
+                <CheckCircleIcon sx={{ color: 'success.main' }} />
+              ) : (
+                <RadioButtonIcon sx={{ color: 'action.active' }} />
+              )}
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title="Delete note">
+            <IconButton
+              onClick={handleDelete}
+              aria-label="Delete note"
+              size="small"
+              sx={{
+                color: isHovered ? 'error.main' : 'action.active',
+                transition: 'color 0.2s'
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </CardActions>
     </Card>
   );
 }

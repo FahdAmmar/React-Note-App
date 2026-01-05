@@ -1,14 +1,12 @@
 import React from "react"
 import ResponsiveDrawer from "./ResponsiveDrawer.jsx"
-
-
 function NoteMain() {
-
 
   return (
     <>
-    <ResponsiveDrawer/>
+      <ResponsiveDrawer />
     </>
   )
+
 }
 export default NoteMain

@@ -1,169 +1,182 @@
 import * as React from 'react';
 import PropTypes from 'prop-types';
-import AppBar from '@mui/material/AppBar';
-import Box from '@mui/material/Box';
-import CssBaseline from '@mui/material/CssBaseline';
-import Divider from '@mui/material/Divider';
-import Drawer from '@mui/material/Drawer';
-import IconButton from '@mui/material/IconButton';
-import MenuIcon from '@mui/icons-material/Menu';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
-import TextField from '@mui/material/TextField';
-
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-
 import {
+  AppBar,
+  Box,
+  CssBaseline,
+  Divider,
+  Drawer,
+  IconButton,
+  Toolbar,
+  Typography,
+  TextField,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
+  Menu as MenuIcon,
   Notes as AllNotesIcon,
   CheckCircle as CheckedIcon,
   RadioButtonUnchecked as NotCheckedIcon,
+  Add as AddIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
-
-import CardNote from './CardNote.jsx';
-import { useContext, useEffect } from 'react';
-import MainContext from '../ContextFolder/MainContext.jsx';
+import { useState, useContext, useEffect, useMemo, useCallback } from 'react';
+import MainContext from '../ContextFolder/MainContext';
 import { v4 as uuidv4 } from 'uuid';
+import CardNote from './CardNote';
 
-
-
-const drawerWidth = 150;
+const drawerWidth = 240;
 
 function ResponsiveDrawer(props) {
-
   const { notes, setNotes } = useContext(MainContext);
-  const [search, setSearch] = React.useState("");
-  const [filter, setFilter] = React.useState("all")
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [inputValues, setInputValues] = useState({ title: '', content: '' });
 
-  const compleated=notes.filter((note)=> note.complated)
-  const notCompleated=notes.filter((note)=> !note.complated)
+  const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  let allNotes=notes
-  if(filter==="completed"){
-    allNotes=compleated
-  }else if(filter==="notcompleted"){
-    allNotes=notCompleated
-  }
-console.log(`fliter is ${filter}`)
-  console.log(allNotes)
+  // تحميل الملاحظات من التخزين المحلي مع معالجة الأخطاء
+  useEffect(() => {
+    const loadNotes = () => {
+      try {
+        const savedNotes = localStorage.getItem('notes');
+        if (savedNotes) {
+          const parsedNotes = JSON.parse(savedNotes);
+          if (Array.isArray(parsedNotes)) {
+            setNotes(parsedNotes);
+            return;
+          }
+        }
+        // setNotes([]); // تعيين إلى مصفوفة فارغة إذا لم تكن هناك ملاحظات محفوظة  
+      } catch (error) {
+        console.error('Error loading notes from localStorage:', error);
+        localStorage.removeItem('notes'); // تنظيف البيانات التالفة
+        setNotes([]); // تعيين إلى مصفوفة فارغة في حالة الخطأ 
+      }
+    };
+    loadNotes();
+  }, [setNotes]);
 
-
-
-
-  const { window } = props;
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [isClosing, setIsClosing] = React.useState(false);
-
-  const handleDrawerClose = () => {
-    setIsClosing(true);
-    setMobileOpen(false);
-  };
-
-  const handleDrawerTransitionEnd = () => {
-    setIsClosing(false);
-  };
-
-  const handleDrawerToggle = () => {
-    if (!isClosing) {
-      setMobileOpen(!mobileOpen);
+  // حفظ الملاحظات في التخزين المحلي عند التغيير
+  useEffect(() => {
+    if (notes.length > 0) {
+      try {
+        localStorage.setItem('notes', JSON.stringify(notes));
+      } catch (error) {
+        console.error('Error saving notes to localStorage:', error);
+      }
     }
+  }, [notes]);
+
+  // تصفية الملاحظات مع دمج البحث والفلاتر
+  const filteredNotes = useMemo(() => {
+    return notes.filter(note => {
+      const matchesSearch = note.title.toLowerCase().includes(search.toLowerCase()) ||
+        note.content.toLowerCase().includes(search.toLowerCase());
+
+      switch (filter) {
+        case 'completed':
+          return note.completed && matchesSearch;
+        case 'notcompleted':
+          return !note.completed && matchesSearch;
+        default:
+          return matchesSearch;
+      }
+    });
+  }, [notes, search, filter]);
+
+  // معالجة فتح/إغلاق القائمة الجانبية
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
   };
 
+  // معالجة إغلاق النافذة المنبثقة
+  const handleDialogClose = useCallback(() => {
+    setDialogOpen(false);
+    setInputValues({ title: '', content: '' }); // إعادة تعيين الحقول
+  }, []);
 
-  //new dirawer content
-  const [inputval, setInputval] = React.useState({ title: "", content: "" });
-  const [open, setOpen] = React.useState(false);
-
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  const handleInputNewNote = (e) => {
+  // إضافة ملاحظة جديدة
+  const handleAddNote = useCallback((e) => {
     e.preventDefault();
+    if (!inputValues.title.trim() && !inputValues.content.trim()) return
+
     const newNote = {
       id: uuidv4(),
-      title: inputval.title,
-      content: inputval.content,
-      complated: false,
-      time: new Date().toLocaleString()
+      title: inputValues.title.trim(),
+      content: inputValues.content.trim(),
+      completed: false,
+      time: new Date().toISOString() // تخزين كـ ISO string للتواريخ
     };
-    const updatedNotes = [...notes, newNote];
-    setNotes(updatedNotes);
-    setInputval({ title: "", content: "" });
-    handleClose();
-    setOpen(false)
-    localStorage.setItem("notes", JSON.stringify(updatedNotes))
-  }
+    setNotes(prev => [...prev, newNote]);
+    handleDialogClose();
+  }, [inputValues, setNotes, handleDialogClose]);
 
+  // تحديث حقول النموذج
+  const handleInputChange = useCallback((field) => (e) => {
+    setInputValues(prev => ({ ...prev, [field]: e.target.value }));
+  }, []);
 
-  // function handleClickEnter(e) {
-  //   if (e.key === "Enter") {
-  //      setOpen(!open)
-  //   }
-  // }
+  // محتوى القائمة الجانبية
+  const drawerContent = (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        bgcolor: '#313a41',
+        color: 'white'
+      }}
+    >
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        <Typography variant="h6" component="div">
+          Notes
+        </Typography>
+        <IconButton
+          edge="end"
+          color="inherit"
+          onClick={() => setDialogOpen(true)}
+          aria-label="Add new note"
+        >
+          <AddIcon />
+        </IconButton>
+      </Toolbar>
 
+      <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.1)' }} />
 
-  // useEffect(() => { document.addEventListener('keyup', handleClickEnter) });
-
-
-
-  const handleClickOpen = () => {
-    setOpen(true);
-
-
-  };
-
-
-
-  useEffect(() => {
-    const saved = localStorage.getItem("notes");
-    if (saved) {
-      setNotes(JSON.parse(saved))
-    }
-  }, [])
-
-
-  
-  const menuItems = [
-    { text: 'All notes', value: 'all', icon: <AllNotesIcon /> },
-    { text: 'Checked', value: 'completed', icon: <CheckedIcon /> },
-    { text: 'Not Checked', value: 'notcompleted', icon: <NotCheckedIcon /> },
-  ];
-
-
-  const drawer = (
-    <div className='bg-[#313a41] h-full text-white relative'>
-      <div style={{ position: "absolute", top: "0", width: "100%", marginLeft: "4px", marginTop: "30px", height: "50px" }}>
-        <h1>Notes</h1>
-        <button onClick={handleClickOpen} style={{ position: "absolute", top: "10px", right: "10px", padding: "5px 10px", borderRadius: "5px", backgroundColor: "#202833", color: "white", border: "none", cursor: "pointer" }}>+</button>
-      </div>
-
-      <Toolbar />
-      <Divider className='mb-5' sx={{ marginTop: "30px" }} />
-
-
-
-      <List className='text-[0.5rem]' value={filter} onChange={(e)=>setFilter(e.target.value)}>
-        {menuItems.map((item) => (
+      <List sx={{ flex: 1 }}>
+        {[
+          { text: 'All Notes', value: 'all', icon: <AllNotesIcon /> },
+          { text: 'Completed', value: 'completed', icon: <CheckedIcon /> },
+          { text: 'Pending', value: 'notcompleted', icon: <NotCheckedIcon /> },
+        ].map((item) => (
           <ListItem key={item.value} disablePadding>
             <ListItemButton
               selected={filter === item.value}
               onClick={() => setFilter(item.value)}
-              value={item.value}
+              sx={{
+                '&.Mui-selected': {
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
+                }
+              }}
             >
-              <ListItemIcon>
+              <ListItemIcon sx={{ color: 'inherit' }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText primary={item.text} />
@@ -171,150 +184,199 @@ console.log(`fliter is ${filter}`)
           </ListItem>
         ))}
       </List>
-
-
-    </div>
+    </Box>
   );
 
-  // Remove this const when copying and pasting into your project.
   const container = window !== undefined ? () => window().document.body : undefined;
 
   return (
-    <div className='top'>
-      <Button variant="outlined" onClick={handleClickOpen}>
-        Open form dialog
-      </Button>
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>New note</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            write your note here
-          </DialogContentText>
-          <form id="subscription-form">
+    <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh', width: "100vw" }}>
+      <CssBaseline />
+
+      {/* شريط التنقل العلوي */}
+      <AppBar
+        position="fixed"
+        sx={{
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          ml: { sm: `${drawerWidth}px` },
+          bgcolor: '#313a41',
+        }}
+      >
+        <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { sm: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+
+          <Box sx={{ flexGrow: 1, maxWidth: 600 }}>
             <TextField
-              autoFocus
-              required
-              margin="dense"
-              id="name"
-              name="text"
-              label="Add note title"
-              type="text"
               fullWidth
-              variant="standard"
-              value={inputval.title}
-              onChange={(e) => setInputval({ ...inputval, title: e.target.value })}
+              variant="outlined"
+              size="small"
+              placeholder="Search notes..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
+                sx: {
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  borderRadius: 2,
+                  '& fieldset': { border: 'none' }
+                }
+              }}
+              inputProps={{ 'aria-label': 'Search notes' }}
             />
-            <TextField
-              autoFocus
-              required
-              margin="dense"
-              id="name"
-              name="text"
-              label="Add note content"
-              type="text"
-              fullWidth
-              variant="standard"
-              value={inputval.content}
-              onChange={(e) => setInputval({ ...inputval, content: e.target.value })}
-            />
-          </form>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit" form="subscription-form" onClick={handleInputNewNote}>
-            Add
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <Box sx={{ display: 'flex' }}>
-        <CssBaseline />
-        <AppBar className='bg-[#313a41] width-full text-white relative navbartop'
-          position="fixed"
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* القائمة الجانبية */}
+      <Box
+        component="nav"
+        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        aria-label="mailbox folders"
+      >
+        <Drawer
+          container={container}
+          variant={isSmDown ? "temporary" : "permanent"}
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
           sx={{
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            ml: { sm: `${drawerWidth}px` },
+            display: { xs: 'block', sm: 'none' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              bgcolor: '#313a41',
+            },
           }}
         >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: 'none' } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                type="text"
-                placeholder="Search..."
-                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-white-500 focus:border-white-500 focus:outline-none shadow-sm placeholder-gray-400 transition-all duration-200"
-              />
+          {drawerContent}
+        </Drawer>
 
-
-            </Typography>
-          </Toolbar>
-        </AppBar>
-        <Box
-          component="nav"
-          sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-          aria-label="mailbox folders"
+        <Drawer
+          variant="permanent"
+          sx={{
+            display: { xs: 'none', sm: 'block' },
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: drawerWidth,
+              bgcolor: '#313a41',
+            },
+          }}
+          open
         >
-          {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
-          <Drawer
-            container={container}
-            variant="temporary"
-            open={mobileOpen}
-            onTransitionEnd={handleDrawerTransitionEnd}
-            onClose={handleDrawerClose}
-            sx={{
-              display: { xs: 'block', sm: 'none' },
-              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-            }}
-            slotProps={{
-              root: {
-                keepMounted: true, // Better open performance on mobile.
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-          <Drawer
-            variant="permanent"
-            sx={{
-              display: { xs: 'none', sm: 'block' },
-              '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        </Box>
+          {drawerContent}
+        </Drawer>
+      </Box>
+
+      {/* منطقة المحتوى الرئيسي */}
+      <Box
+        component="main"
+        sx={{
+          backgroundColor: '#292d3e',
+          flexGrow: 1,
+          p: 4,
+          width: { sm: `calc(100% - ${drawerWidth}px)` },
+          mt: { xs: 8, sm: 0 }
+        }}
+      >
         <Toolbar />
-        <Box className="cardnotes  grid grid-cols-1sm:grid-cols-2  md:grid-cols-3 gap-4 items-center justify-content-between  mt-10 position-relative" ent="main"
-          sx={{ flexGrow: 1, p: 1, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
-        >
-          {/* Main content goes here */}
 
-          {allNotes.filter((note) => note.title.toLowerCase().includes(search.toLowerCase())).map((note) => (
+        {/* شبكة الملاحظات */}
+        <Box
+          sx={{
+            width: "100%",
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(3, 1fr)',
+              md: 'repeat(4, 1fr)'
+            },
+            gap: 3,
+            mt: 2
+          }}
+        >
+          {filteredNotes.map((note) => (
             <CardNote key={note.id} note={note} />
           ))}
 
+          {filteredNotes.length === 0 && (
+            <Box sx={{
+              gridColumn: '1/-1',
+              textAlign: 'center',
+              py: 4,
+              color: 'text.secondary'
+            }}>
+              No notes found. Try changing filters or search terms.
+            </Box>
+          )}
         </Box>
       </Box>
-    </div>
 
+      {/* نافذة إضافة ملاحظة جديدة */}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        maxWidth="sm"
+        fullWidth
+        aria-labelledby="add-note-dialog"
+      >
+        <DialogTitle id="add-note-dialog">Add New Note</DialogTitle>
+        <form onSubmit={handleAddNote}>
+          <DialogContent>
+            <DialogContentText sx={{ mb: 2 }}>
+              Create a new note with title and content
+            </DialogContentText>
+
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Note Title"
+              fullWidth
+              variant="outlined"
+              value={inputValues.title}
+              onChange={handleInputChange('title')}
+              required
+              inputProps={{ maxLength: 100 }}
+            />
+
+            <TextField
+              margin="dense"
+              label="Note Content"
+              fullWidth
+              multiline
+              rows={4}
+              variant="outlined"
+              value={inputValues.content}
+              onChange={handleInputChange('content')}
+              required
+              inputProps={{ maxLength: 500 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3 }}>
+            <Button onClick={handleDialogClose} variant="outlined">
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!inputValues.title.trim() || !inputValues.content.trim()}
+            >
+              Add Note
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
+    </Box>
   );
 }
 
 ResponsiveDrawer.propTypes = {
-  /**
-   * Injected by the documentation to work in an iframe.
-   * Remove this when copying and pasting into your project.
-   */
   window: PropTypes.func,
 };
 
