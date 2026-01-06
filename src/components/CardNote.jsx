@@ -1,144 +1,102 @@
-import * as React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  CardActions,
-  IconButton,
-  Checkbox,
-  Tooltip,
-  Box,
-  useTheme
-} from '@mui/material';
+import React, { useContext } from 'react';
 import {
   Delete as DeleteIcon,
+  Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
-  RadioButtonUnchecked as RadioButtonIcon,
+  RadioButtonChecked as RadioButtonCheckedIcon
 } from '@mui/icons-material';
-import { useState, useContext, useCallback } from 'react';
 import MainContext from '../ContextFolder/MainContext';
 
-export default function CardNote({ note }) {
-  const { notes, setNotes } = useContext(MainContext);
-  const [isHovered, setIsHovered] = useState(false);
-  const theme = useTheme();
+export default function CardNote({ note, onEdit }) {
+  const { setNotes } = useContext(MainContext);
 
-  // تبديل حالة الإكمال
-  // const handleToggleComplete = useCallback(() => {
-  //   setNotes(prevNotes => prevNotes.map(n => n.id === note.id ? { ...n, completed: !n.completed } : n));
-  // }, [note.id, setNotes]);
+  const handleDelete = () => {
+    setNotes(prev => prev.filter(n => n.id !== note.id));
+  };
 
-  function handlechecked(id) {
-    const updatedNotes = notes.map((note) => {
-      if (note.id === id) {
-        return { ...note, completed: !note.completed };
-      }
-      return note;
+  const handleToggleComplete = () => {
+    setNotes(prev => prev.map(n =>
+      n.id === note.id
+        ? { ...n, completed: !n.completed, lastModified: new Date().toISOString() }
+        : n
+    ));
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    setNotes(updatedNotes);
-    localStorage.setItem('notes', JSON.stringify(updatedNotes));
-  }
-
-  // حذف الملاحظة
-  const handleDelete = useCallback(() => {
-    setNotes(prevNotes => prevNotes.filter(n => n.id !== note.id));
-  }, [note.id, setNotes]);
-
+  };
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: theme.shadows[4]
-        }
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      aria-label={`Note titled ${note.title}`}
+    <div
+      className={`
+        bg-${note.completed ? 'success-500/10' : 'dark-900'} 
+        border border-white/10 rounded-xl overflow-hidden relative
+        transition-all duration-200
+      `}
     >
-      <CardContent sx={{
-        flexGrow: 1,
-        pb: 1,
-        '&:last-child': { pb: 1 }
-      }}>
-        <Typography
-          variant="h6"
-          component="h2"
-          sx={{
-            fontWeight: 600,
-            mb: 1,
-            textDecoration: note.completed ? 'line-through' : 'none',
-            color: note.completed ? 'text.disabled' : 'text.primary'
-          }}
+      <div className="p-4 flex items-start gap-3">
+        <button
+          onClick={handleToggleComplete}
+          className="mt-1"
+          aria-label={note.completed ? "Mark as incomplete" : "Mark as complete"}
         >
-          {note.title}
-        </Typography>
+          {note.completed ? (
+            <CheckCircleIcon className="text-success-500" fontSize="small" />
+          ) : (
+            <RadioButtonCheckedIcon className="text-white/50" fontSize="small" />
+          )}
+        </button>
 
-        <Typography
-          variant="body1"
-          sx={{
-            color: note.completed ? 'text.disabled' : 'text.secondary',
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.6
-          }}
-        >
-          {note.content}
-        </Typography>
-      </CardContent>
+        <div className="flex-1 min-w-0">
+          <h3 className={`font-semibold mb-2 break-words ${note.completed
+            ? 'line-through text-white/70'
+            : 'text-white'
+            }`}>
+            {note.title}
+          </h3>
 
-      <CardActions sx={{
-        p: 2,
-        justifyContent: 'space-between',
-        borderTop: '1px solid',
-        borderTopColor: 'divider'
-      }}>
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          color: 'text.secondary',
-          fontSize: '0.85rem'
-        }}>
-          <Typography component="time" >
-            {note.lastModified}
-          </Typography>
-        </Box>
+          <p className={`text-sm whitespace-pre-wrap break-words line-clamp-5 ${note.completed ? 'text-white/60' : 'text-white/80'
+            }`}>
+            {note.content}
+          </p>
+        </div>
+      </div>
 
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title={note.completed ? "Mark as incomplete" : "Mark as complete"}>
-            <IconButton
-              onClick={() => { handlechecked(note.id); }}
-              aria-label={note.completed ? "Mark incomplete" : "Mark complete"}
-              size="small"
-            >
-              {note.completed ? (
-                <CheckCircleIcon sx={{ color: 'success.main' }} />
-              ) : (
-                <RadioButtonIcon sx={{ color: 'action.active' }} />
-              )}
-            </IconButton>
-          </Tooltip>
+      <div className="px-4 pb-4 flex justify-between items-center border-t border-white/10">
+        <span className="text-xs text-white/50">
+          {formatDate(note.lastModified || note.time)}
+        </span>
 
-          <Tooltip title="Delete note">
-            <IconButton
-              onClick={handleDelete}
-              aria-label="Delete note"
-              size="small"
-              sx={{
-                color: isHovered ? 'error.main' : 'action.active',
-                transition: 'color 0.2s'
+        <div className="flex gap-1">
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
               }}
+              className="p-1.5 text-warning-400 hover:bg-warning-500/20 rounded transition-colors"
+              title="Edit note"
             >
-              <DeleteIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </CardActions>
-    </Card>
+              <EditIcon fontSize="small" />
+            </button>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete();
+            }}
+            className="p-1.5 text-error-400 hover:bg-error-500/20 rounded transition-colors"
+            title="Delete note"
+          >
+            <DeleteIcon fontSize="small" />
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
