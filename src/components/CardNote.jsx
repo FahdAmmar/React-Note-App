@@ -24,9 +24,9 @@ export default function CardNote({ note }) {
   const theme = useTheme();
 
   // تبديل حالة الإكمال
-  const handleToggleComplete = useCallback(() => {
-    setNotes(prevNotes => prevNotes.map(n => n.id === note.id ? { ...n, completed: !n.completed } : n));
-  }, [note.id, setNotes]);
+  // const handleToggleComplete = useCallback(() => {
+  //   setNotes(prevNotes => prevNotes.map(n => n.id === note.id ? { ...n, completed: !n.completed } : n));
+  // }, [note.id, setNotes]);
 
   function handlechecked(id) {
     const updatedNotes = notes.map((note) => {
@@ -44,21 +44,6 @@ export default function CardNote({ note }) {
     setNotes(prevNotes => prevNotes.filter(n => n.id !== note.id));
   }, [note.id, setNotes]);
 
-  // تنسيق التاريخ
-  const formatDate = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-
-    } catch (error) {
-      return 'Invalid date';
-    }
-  };
 
   return (
     <Card
@@ -119,8 +104,8 @@ export default function CardNote({ note }) {
           color: 'text.secondary',
           fontSize: '0.85rem'
         }}>
-          <Typography component="time" dateTime={note.time}>
-            {formatDate(note.time)}
+          <Typography component="time" >
+            {note.lastModified}
           </Typography>
         </Box>
 

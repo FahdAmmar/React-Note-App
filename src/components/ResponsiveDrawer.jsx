@@ -38,6 +38,9 @@ import { v4 as uuidv4 } from 'uuid';
 import CardNote from './CardNote';
 
 const drawerWidth = 240;
+const STORAGE_KEY = 'notes_app_data';
+const MAX_TITLE_LENGTH = 100;
+const MAX_CONTENT_LENGTH = 500;
 
 function ResponsiveDrawer(props) {
   const { notes, setNotes } = useContext(MainContext);
@@ -46,48 +49,81 @@ function ResponsiveDrawer(props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inputValues, setInputValues] = useState({ title: '', content: '' });
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const theme = useTheme();
   const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // تحميل الملاحظات من التخزين المحلي مع معالجة الأخطاء
+  // تحميل الملاحظات من التخزين المحلي مرة واحدة عند التحميل
   useEffect(() => {
     const loadNotes = () => {
       try {
-        const savedNotes = localStorage.getItem('notes');
+        const savedNotes = localStorage.getItem(STORAGE_KEY);
         if (savedNotes) {
           const parsedNotes = JSON.parse(savedNotes);
           if (Array.isArray(parsedNotes)) {
-            setNotes(parsedNotes);
-            return;
+            // التحقق من صحة كل عنصر في المصفوفة
+            const validNotes = parsedNotes.filter(note =>
+              note &&
+              note.id &&
+              note.title &&
+              typeof note.title === 'string' &&
+              typeof note.completed === 'boolean'
+            );
+
+            if (validNotes.length > 0) {
+              setNotes(validNotes);
+            } else {
+              setNotes([]);
+            }
+          } else {
+            setNotes([]);
           }
+        } else {
+          setNotes([]);
         }
-        // setNotes([]); // تعيين إلى مصفوفة فارغة إذا لم تكن هناك ملاحظات محفوظة  
       } catch (error) {
         console.error('Error loading notes from localStorage:', error);
-        localStorage.removeItem('notes'); // تنظيف البيانات التالفة
-        setNotes([]); // تعيين إلى مصفوفة فارغة في حالة الخطأ 
+        // محاولة استرداد البيانات التالفة أو بدء تشغيل جديد
+        localStorage.removeItem(STORAGE_KEY);
+        setNotes([]);
+      } finally {
+        setIsInitialized(true);
       }
     };
+
     loadNotes();
   }, [setNotes]);
 
   // حفظ الملاحظات في التخزين المحلي عند التغيير
   useEffect(() => {
-    if (notes.length > 0) {
-      try {
-        localStorage.setItem('notes', JSON.stringify(notes));
-      } catch (error) {
-        console.error('Error saving notes to localStorage:', error);
+    if (!isInitialized) return;
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    } catch (error) {
+      console.error('Error saving notes to localStorage:', error);
+      // محاولة تنظيف الذاكرة المؤقتة إذا كانت ممتلئة
+      if (error.name === 'QuotaExceededError') {
+        console.warn('LocalStorage quota exceeded. Clearing old data...');
+        localStorage.clear();
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(notes.slice(0, 10))); // حفظ أول 10 ملاحظة فقط
+        } catch (e) {
+          console.error('Failed to save after clearing storage:', e);
+        }
       }
     }
-  }, [notes]);
+  }, [notes, isInitialized]);
 
   // تصفية الملاحظات مع دمج البحث والفلاتر
   const filteredNotes = useMemo(() => {
+    if (!Array.isArray(notes)) return [];
+
     return notes.filter(note => {
-      const matchesSearch = note.title.toLowerCase().includes(search.toLowerCase()) ||
-        note.content.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch =
+        note.title?.toLowerCase().includes(search.toLowerCase()) ||
+        note.content?.toLowerCase().includes(search.toLowerCase());
 
       switch (filter) {
         case 'completed':
@@ -101,39 +137,46 @@ function ResponsiveDrawer(props) {
   }, [notes, search, filter]);
 
   // معالجة فتح/إغلاق القائمة الجانبية
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
+  const handleDrawerToggle = useCallback(() => {
+    setMobileOpen(prev => !prev);
+  }, []);
 
   // معالجة إغلاق النافذة المنبثقة
   const handleDialogClose = useCallback(() => {
     setDialogOpen(false);
-    setInputValues({ title: '', content: '' }); // إعادة تعيين الحقول
+    setInputValues({ title: '', content: '' });
   }, []);
 
   // إضافة ملاحظة جديدة
   const handleAddNote = useCallback((e) => {
     e.preventDefault();
-    if (!inputValues.title.trim() && !inputValues.content.trim()) return
+
+    const title = inputValues.title.trim();
+    const content = inputValues.content.trim();
+
+    if (!title || content) return;
 
     const newNote = {
       id: uuidv4(),
-      title: inputValues.title.trim(),
-      content: inputValues.content.trim(),
+      title: title || 'Untitled Note',
+      content: content || '',
       completed: false,
-      time: new Date().toISOString() // تخزين كـ ISO string للتواريخ
+      lastModified: new Date().toLocaleString()
     };
+
     setNotes(prev => [...prev, newNote]);
     handleDialogClose();
   }, [inputValues, setNotes, handleDialogClose]);
 
   // تحديث حقول النموذج
   const handleInputChange = useCallback((field) => (e) => {
-    setInputValues(prev => ({ ...prev, [field]: e.target.value }));
+    const maxLength = field === 'title' ? MAX_TITLE_LENGTH : MAX_CONTENT_LENGTH;
+    const value = e.target.value.slice(0, maxLength);
+    setInputValues(prev => ({ ...prev, [field]: value }));
   }, []);
 
   // محتوى القائمة الجانبية
-  const drawerContent = (
+  const drawerContent = useMemo(() => (
     <Box
       sx={{
         display: 'flex',
@@ -143,8 +186,8 @@ function ResponsiveDrawer(props) {
         color: 'white'
       }}
     >
-      <Toolbar sx={{ justifyContent: 'space-between' }}>
-        <Typography variant="h6" component="div">
+      <Toolbar sx={{ justifyContent: 'space-between', minHeight: '64px' }}>
+        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
           Notes
         </Typography>
         <IconButton
@@ -152,6 +195,7 @@ function ResponsiveDrawer(props) {
           color="inherit"
           onClick={() => setDialogOpen(true)}
           aria-label="Add new note"
+          sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
         >
           <AddIcon />
         </IconButton>
@@ -159,35 +203,65 @@ function ResponsiveDrawer(props) {
 
       <Divider sx={{ my: 1, bgcolor: 'rgba(255,255,255,0.1)' }} />
 
-      <List sx={{ flex: 1 }}>
+      <List sx={{ flex: 1, overflow: 'auto' }}>
         {[
           { text: 'All Notes', value: 'all', icon: <AllNotesIcon /> },
           { text: 'Completed', value: 'completed', icon: <CheckedIcon /> },
           { text: 'Pending', value: 'notcompleted', icon: <NotCheckedIcon /> },
-        ].map((item) => (
-          <ListItem key={item.value} disablePadding>
-            <ListItemButton
-              selected={filter === item.value}
-              onClick={() => setFilter(item.value)}
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'rgba(255,255,255,0.1)',
-                  '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
-                }
-              }}
-            >
-              <ListItemIcon sx={{ color: 'inherit' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
+        ].map((item) => {
+          const count = item.value === 'all'
+            ? notes.length
+            : item.value === 'completed'
+              ? notes.filter(n => n.completed).length
+              : notes.filter(n => !n.completed).length;
 
-  const container = window !== undefined ? () => window().document.body : undefined;
+          return (
+            <ListItem key={item.value} disablePadding>
+              <ListItemButton
+                selected={filter === item.value}
+                onClick={() => {
+                  setFilter(item.value);
+                  if (isSmDown) setMobileOpen(false);
+                }}
+                sx={{
+                  '&.Mui-selected': {
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' }
+                  },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' }
+                }}
+              >
+                <ListItemIcon sx={{ color: 'inherit', minWidth: '40px' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText
+                  primary={item.text}
+                  primaryTypographyProps={{ fontWeight: filter === item.value ? 600 : 400 }}
+                />
+                <Typography variant="body2" sx={{
+                  ml: 1,
+                  bgcolor: 'rgba(255,255,255,0.1)',
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  minWidth: '24px',
+                  textAlign: 'center'
+                }}>
+                  {count}
+                </Typography>
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
+      </List>
+
+      <Box sx={{ p: 2, fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
+        {notes.length} total notes
+      </Box>
+    </Box>
+  ), [filter, notes, isSmDown]);
+
+  const container = typeof window !== 'undefined' ? () => window.document.body : undefined;
 
   return (
     <Box sx={{ display: 'flex', bgcolor: '#f5f5f5', minHeight: '100vh', width: "100vw" }}>
@@ -202,7 +276,7 @@ function ResponsiveDrawer(props) {
           bgcolor: '#313a41',
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: '64px' }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -213,7 +287,7 @@ function ResponsiveDrawer(props) {
             <MenuIcon />
           </IconButton>
 
-          <Box sx={{ flexGrow: 1, maxWidth: 600 }}>
+          <Box sx={{ flexGrow: 1, maxWidth: 600, ml: { xs: 0, sm: 2 } }}>
             <TextField
               fullWidth
               variant="outlined"
@@ -226,10 +300,15 @@ function ResponsiveDrawer(props) {
                 sx: {
                   bgcolor: 'rgba(255,255,255,0.1)',
                   borderRadius: 2,
-                  '& fieldset': { border: 'none' }
+                  '& fieldset': { border: 'none' },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' },
+                  '&.Mui-focused': { bgcolor: 'rgba(255,255,255,0.2)' }
                 }
               }}
-              inputProps={{ 'aria-label': 'Search notes' }}
+              inputProps={{
+                'aria-label': 'Search notes',
+                maxLength: 50
+              }}
             />
           </Box>
         </Toolbar>
@@ -243,9 +322,10 @@ function ResponsiveDrawer(props) {
       >
         <Drawer
           container={container}
-          variant={isSmDown ? "temporary" : "permanent"}
+          variant="temporary"
           open={mobileOpen}
           onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': {
@@ -266,6 +346,7 @@ function ResponsiveDrawer(props) {
               boxSizing: 'border-box',
               width: drawerWidth,
               bgcolor: '#313a41',
+              borderRight: '1px solid rgba(255,255,255,0.1)'
             },
           }}
           open
@@ -280,12 +361,13 @@ function ResponsiveDrawer(props) {
         sx={{
           backgroundColor: '#292d3e',
           flexGrow: 1,
-          p: 4,
+          p: { xs: 2, sm: 3, md: 4 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: { xs: 8, sm: 0 }
+          minHeight: '100vh',
+          mt: { xs: '64px', sm: 0 }
         }}
       >
-        <Toolbar />
+        <Toolbar sx={{ display: { sm: 'none' }, minHeight: '64px' }} />
 
         {/* شبكة الملاحظات */}
         <Box
@@ -294,11 +376,12 @@ function ResponsiveDrawer(props) {
             display: 'grid',
             gridTemplateColumns: {
               xs: '1fr',
-              sm: 'repeat(3, 1fr)',
-              md: 'repeat(4, 1fr)'
+              sm: 'repeat(auto-fill, minmax(280px, 1fr))',
+              lg: 'repeat(auto-fill, minmax(300px, 1fr))'
             },
             gap: 3,
-            mt: 2
+            mt: 2,
+            autoRows: 'minmax(200px, auto)'
           }}
         >
           {filteredNotes.map((note) => (
@@ -309,10 +392,30 @@ function ResponsiveDrawer(props) {
             <Box sx={{
               gridColumn: '1/-1',
               textAlign: 'center',
-              py: 4,
-              color: 'text.secondary'
+              py: 8,
+              color: 'rgba(255,255,255,0.6)'
             }}>
-              No notes found. Try changing filters or search terms.
+              <Typography variant="h6" sx={{ mb: 2 }}>
+                {search ? 'No matching notes found' : 'No notes yet'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 3 }}>
+                {search
+                  ? 'Try adjusting your search terms or filters'
+                  : 'Start by clicking the + button to create your first note'}
+              </Typography>
+              {!search && (
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => setDialogOpen(true)}
+                  sx={{
+                    bgcolor: '#4a90e2',
+                    '&:hover': { bgcolor: '#3a80d2' }
+                  }}
+                >
+                  Create First Note
+                </Button>
+              )}
             </Box>
           )}
         </Box>
@@ -325,11 +428,16 @@ function ResponsiveDrawer(props) {
         maxWidth="sm"
         fullWidth
         aria-labelledby="add-note-dialog"
+        PaperProps={{
+          sx: { borderRadius: 2 }
+        }}
       >
-        <DialogTitle id="add-note-dialog">Add New Note</DialogTitle>
+        <DialogTitle id="add-note-dialog" sx={{ fontWeight: 600 }}>
+          Add New Note
+        </DialogTitle>
         <form onSubmit={handleAddNote}>
           <DialogContent>
-            <DialogContentText sx={{ mb: 2 }}>
+            <DialogContentText sx={{ mb: 3 }}>
               Create a new note with title and content
             </DialogContentText>
 
@@ -341,8 +449,11 @@ function ResponsiveDrawer(props) {
               variant="outlined"
               value={inputValues.title}
               onChange={handleInputChange('title')}
-              required
-              inputProps={{ maxLength: 100 }}
+              inputProps={{
+                maxLength: MAX_TITLE_LENGTH
+              }}
+              helperText={`${inputValues.title.length}/${MAX_TITLE_LENGTH}`}
+              sx={{ mb: 2 }}
             />
 
             <TextField
@@ -354,18 +465,29 @@ function ResponsiveDrawer(props) {
               variant="outlined"
               value={inputValues.content}
               onChange={handleInputChange('content')}
-              required
-              inputProps={{ maxLength: 500 }}
+              inputProps={{
+                maxLength: MAX_CONTENT_LENGTH
+              }}
+              helperText={`${inputValues.content.length}/${MAX_CONTENT_LENGTH}`}
             />
           </DialogContent>
-          <DialogActions sx={{ p: 3 }}>
-            <Button onClick={handleDialogClose} variant="outlined">
+          <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button
+              onClick={handleDialogClose}
+              variant="outlined"
+              sx={{ mr: 1 }}
+            >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              disabled={!inputValues.title.trim() || !inputValues.content.trim()}
+              disabled={!inputValues.title.trim() && !inputValues.content.trim()}
+              sx={{
+                px: 3,
+                bgcolor: '#4a90e2',
+                '&:hover': { bgcolor: '#3a80d2' }
+              }}
             >
               Add Note
             </Button>
@@ -377,7 +499,7 @@ function ResponsiveDrawer(props) {
 }
 
 ResponsiveDrawer.propTypes = {
-  window: PropTypes.func,
+  window: PropTypes.object,
 };
 
 export default ResponsiveDrawer;
