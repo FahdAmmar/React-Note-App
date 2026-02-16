@@ -10,8 +10,7 @@ body{
   margin: 0;padding: 0;
   box-sizing: border-box;
   text-decoration: none;
-  background-color: #313a41 !important; 
-  color: white !important;
+  background-color: rgb(38, 38, 38) !important; 
   height: 100vmax;
 }
 .App {
@@ -21,5 +20,53 @@ body{
 .navbartop{
   top:0 !important;
    background-color: #313a41 !important;
-  color: white !important;
+}
+.red{
+  background-color: rgb(54, 5, 5);
+  color:rgb(191, 68, 68) 
+}
+.red:hover{
+  background-color: rgb(210, 26, 26);
+  color:#fff;
+}
+.pink{
+  background-color: #320a21;
+  color: #911e5f;
+}
+.pink:hover{
+  background-color: #b2307a;
+  color: #fff;
+}
+.yellow{
+  background-color:#452d0c;
+  color:#b97f2d;
+}
+.yellow:hover{
+  background-color: #b97f2d;
+  color: #fff;
+}
+.gray{
+  background-color:#212a38;
+  color: lightslategray;
+}
+.gray:hover{
+  background-color:lightslategray;
+  color: #fff;
+}
+.green{
+  background-color: #235c38;
+  color:lightgreen
+}
+.green:hover{
+  background-color: lightgreen;
+  color: #fff;
+
+}
+.blue{
+  background-color: #212a38;
+  color: lightskyblue;
+}
+.blue:hover{
+  background-color: lightskyblue;
+  color: #fff;
 }

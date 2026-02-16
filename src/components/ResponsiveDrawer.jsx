@@ -50,7 +50,6 @@ export default function ResponsiveDrawer() {
   const theme = useTheme();
   const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Initialize notes from localStorage
   useEffect(() => {
     const loadNotes = () => {
       try {
@@ -73,7 +72,6 @@ export default function ResponsiveDrawer() {
     loadNotes();
   }, []);
 
-  // Save notes to localStorage
   useEffect(() => {
     if (!isInitialized) return;
 
@@ -127,6 +125,14 @@ export default function ResponsiveDrawer() {
     setDialogOpen(true);
   }, [notes]);
 
+  const colors = ['red', 'blue', 'green', 'pink', 'yellow', 'gray']
+  const nextColorIndex = notes.length % colors.length;
+  console.log("AAA", notes.length)
+  const nextColor = colors[nextColorIndex];
+
+
+
+
   const handleSaveNote = useCallback((e) => {
     e.preventDefault();
     const { title, content } = inputValues;
@@ -134,6 +140,8 @@ export default function ResponsiveDrawer() {
       showSnackbar('Note cannot be empty', 'error');
       return;
     }
+
+
 
     setIsSaving(true);
     setTimeout(() => {
@@ -144,7 +152,8 @@ export default function ResponsiveDrawer() {
           content: content.trim() || '',
           completed: false,
           time: new Date().toISOString(),
-          lastModified: new Date().toISOString()
+          lastModified: new Date().toISOString(),
+          colors: nextColor
         };
         setNotes(prev => [...prev, newNote]);
         showSnackbar('Note added successfully!', 'success');
@@ -170,19 +179,23 @@ export default function ResponsiveDrawer() {
     setSnackbar({ open: true, message, severity });
   }, []);
 
+
+
+
+
   const drawerContent = (
-    <div className="flex flex-col h-full w-full bg-dark-800 text-white">
+    <div className="flex flex-col h-full w-full bg-neutral-800 text-slate-200">
       <div className="flex justify-between items-center p-4 min-h-[64px]">
         <h1 className="text-xl font-semibold">Notes</h1>
         <button
           onClick={handleOpenAddDialog}
-          className="p-2 rounded hover:bg-white/10 transition-colors"
+          className="p-2 rounded hover:bg-neutral-900 transition-colors"
           aria-label="Add new note"
         >
-          <AddIcon className="text-white" />
+          <AddIcon className="text-slate-200" />
         </button>
       </div>
-      <div className="my-2 border-t border-white/10" />
+      <div className="my-2 border-t border-white" />
 
       <div className="flex-1 overflow-y-auto">
         <List>
@@ -197,18 +210,15 @@ export default function ResponsiveDrawer() {
 
             return (
               <ListItem key={item.value} disablePadding>
-                <ListItemButton
+                <ListItemButton className="text-white "
                   selected={filter === item.value}
                   onClick={() => {
                     setFilter(item.value);
                     if (isSmDown) setMobileOpen(false);
                   }}
-                  className={`${filter === item.value
-                    ? 'bg-white/10 hover:bg-white/15'
-                    : 'hover:bg-white/5'
-                    }`}
+
                 >
-                  <ListItemIcon className="text-inherit min-w-[40px]">
+                  <ListItemIcon className="text-white  min-w-[40px] ">
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
@@ -217,7 +227,7 @@ export default function ResponsiveDrawer() {
                       className: filter === item.value ? 'font-semibold' : 'font-normal'
                     }}
                   />
-                  <span className="ml-2 bg-white/10 px-2 py-1 rounded text-xs min-w-[24px] text-right">
+                  <span className="ml-2  px-2 py-1 rounded text-xs min-w-[24px] text-right">
                     {count}
                   </span>
                 </ListItemButton>
@@ -227,7 +237,7 @@ export default function ResponsiveDrawer() {
         </List>
       </div>
 
-      <div className="p-4 text-xs text-white/60 border-t border-white/10">
+      <div className="p-4 text-xs text-slate-200 border-t border-bg-white">
         {notes.length} total notes
       </div>
     </div>
@@ -236,13 +246,13 @@ export default function ResponsiveDrawer() {
   const container = typeof window !== 'undefined' ? () => window.document.body : undefined;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 min-w-screen">
+    <div className="flex min-h-screen bg-neutral-800 min-w-screen">
       {/* Top App Bar */}
       <header className="fixed top-0 left-0 right-0 z-10 sm:w-[calc(100%-200px)] sm:ml-52 bg-dark-800">
         <div className="flex items-center h-16 px-4">
           <button
             onClick={handleDrawerToggle}
-            className="mr-4 text-white sm:hidden"
+            className="mr-4 text-slate-200 sm:hidden"
             aria-label="Toggle drawer"
           >
             <MenuIcon />
@@ -255,17 +265,17 @@ export default function ResponsiveDrawer() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value.slice(0, 50))}
                 placeholder="Search notes..."
-                className="w-full py-2 pl-10 pr-4 bg-white/10 rounded-lg focus:bg-white/20 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                className="w-full py-2 pl-10 pr-4 bg-black/10 rounded-lg focus:bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
                 aria-label="Search notes"
               />
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/70" />
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-200/70" />
             </div>
           </div>
         </div>
       </header>
 
       {/* Sidebar */}
-      <aside className="fixed sm:relative z-20">
+      <aside className="fixed sm:relative z-20 bg-neutral-900 !important ">
         <Drawer
           container={container}
           variant={isSmDown ? "temporary" : "permanent"}
@@ -278,16 +288,18 @@ export default function ResponsiveDrawer() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 pt-16 sm:pt-0 p-4 sm:p-6 sm:mt-8 md:p-8  sm:ml-40   w-full">
+      <main className="flex-1 pt-16 sm:pt-0 p-4 sm:p-6 sm:mt-8 md:p-8  sm:ml-40   w-full ">
 
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(200px,auto)]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 auto-rows-[minmax(150px,auto)]">
           {filteredNotes.map(note => (
             <div
               key={note.id}
               onDoubleClick={() => handleOpenEditDialog(note.id)}
-              className="cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-lg"
+              className={`cursor-pointer transition-all duration-300 hover:translate-y-1.5 `}
             >
+
+
               <CardNote
                 note={note}
                 onEdit={() => handleOpenEditDialog(note.id)}
@@ -296,7 +308,7 @@ export default function ResponsiveDrawer() {
           ))}
 
           {filteredNotes.length === 0 && (
-            <div className="col-span-full text-center py-12 text-gray-500">
+            <div className="col-span-full text-center py-12 text-slate-200">
               <h2 className="text-xl font-medium mb-2">
                 {search ? 'No matching notes found' : 'No notes yet'}
               </h2>
@@ -308,7 +320,7 @@ export default function ResponsiveDrawer() {
               {!search && (
                 <button
                   onClick={handleOpenAddDialog}
-                  className="bg-primary-500 hover:bg-primary-600 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center mx-auto"
+                  className="bg-neutral-800 hover:bg-neutral-950 text-slate-200 font-medium py-2 px-4 rounded-lg flex items-center justify-center mx-auto"
                 >
                   <AddIcon className="mr-2" /> Create First Note
                 </button>
@@ -318,21 +330,21 @@ export default function ResponsiveDrawer() {
         </div>
 
         {filteredNotes.length > 0 && (
-          <p className="text-center mt-6 text-gray-400 italic">
+          <p className="text-center mt-6 text-gray-200 italic">
             💡 Double-click on any note to edit it
           </p>
         )}
       </main>
 
       {/* Dialog */}
-      <Dialog
+      <Dialog style={{ backgroundColor: "gray" }}
         open={dialogOpen}
         onClose={handleDialogClose}
         maxWidth="sm"
         fullWidth
         aria-labelledby="note-dialog"
       >
-        <DialogTitle id="note-dialog" className="font-semibold">
+        <DialogTitle id="note-dialog" className="font-semibold bg-neutral-800 text-slate-200">
           {dialogMode === 'add' ? 'Add New Note' : 'Edit Note'}
         </DialogTitle>
         <form onSubmit={handleSaveNote}>
@@ -352,7 +364,7 @@ export default function ResponsiveDrawer() {
                 maxLength={MAX_TITLE_LENGTH}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className="text-xs text-neutral-200 mt-1 text-right">
                 {inputValues.title.length}/{MAX_TITLE_LENGTH}
               </p>
             </div>
@@ -366,7 +378,7 @@ export default function ResponsiveDrawer() {
                 rows="4"
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
-              <p className="text-xs text-gray-500 mt-1 text-right">
+              <p className="text-xs text-neutral-200 mt-1 text-right">
                 {inputValues.content.length}/{MAX_CONTENT_LENGTH}
               </p>
             </div>
@@ -377,7 +389,7 @@ export default function ResponsiveDrawer() {
               type="button"
               onClick={handleDialogClose}
               disabled={isSaving}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              className="px-4 py-2 border rounded-lg hover:bg-neutral-50 disabled:opacity-50"
             >
               Cancel
             </button>
@@ -385,16 +397,16 @@ export default function ResponsiveDrawer() {
               type="submit"
               disabled={isSaving || (!inputValues.title.trim() && !inputValues.content.trim())}
               className={`
-                px-4 py-2 rounded-lg font-medium flex items-center justify-center
+                px-4 py-2 rounded-lg font-medium flex items-center justify-center bg-neutral-800
                 ${dialogMode === 'add'
-                  ? 'bg-primary-500 hover:bg-primary-600'
-                  : 'bg-warning-500 hover:bg-warning-600'
-                } text-white disabled:opacity-70
+                  ? 'bg-primary-500 hover:bg-neutral-900'
+                  : 'bg-warning-500 hover:bg-neutral-900'
+                } text-slate-200 
               `}
             >
               {isSaving ? (
                 <>
-                  <CircularProgress size={20} className="mr-2 text-white" />
+                  <CircularProgress size={20} className="mr-2 text-slate-200" />
                   {dialogMode === 'add' ? 'Adding...' : 'Saving...'}
                 </>
               ) : (

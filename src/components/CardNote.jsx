@@ -8,7 +8,13 @@ import {
 import MainContext from '../ContextFolder/MainContext';
 
 export default function CardNote({ note, onEdit }) {
-  const { setNotes } = useContext(MainContext);
+  const { notes, setNotes } = useContext(MainContext);
+
+
+
+
+
+
 
   const handleDelete = () => {
     setNotes(prev => prev.filter(n => n.id !== note.id));
@@ -33,11 +39,9 @@ export default function CardNote({ note, onEdit }) {
 
   return (
     <div
-      className={`
-        bg-${note.completed ? 'success-500/10' : 'dark-900'} 
-        border border-white/10 rounded-xl overflow-hidden relative
-        transition-all duration-200
-      `}
+      className={`p-4 rounded-xl border border-white overflow-hidden ${note.colors}
+             transition-all duration-200 
+          `}
     >
       <div className="p-4 flex items-start gap-3">
         <button
@@ -46,29 +50,29 @@ export default function CardNote({ note, onEdit }) {
           aria-label={note.completed ? "Mark as incomplete" : "Mark as complete"}
         >
           {note.completed ? (
-            <CheckCircleIcon className="text-success-500" fontSize="small" />
+            <CheckCircleIcon className="text-green-500" fontSize="small" />
           ) : (
-            <RadioButtonCheckedIcon className="text-white/50" fontSize="small" />
+            <RadioButtonCheckedIcon className="text-white" fontSize="small" />
           )}
         </button>
 
-        <div className="flex-1 min-w-0">
-          <h3 className={`font-semibold mb-2 break-words ${note.completed
-            ? 'line-through text-white/70'
-            : 'text-white'
+        <div className="flex-1 min-w-0 ">
+          <h3 className={`font-semibold mb-2 text-2xl ${note.completed
+            ? 'line-through text-green-400'
+            : ''
             }`}>
             {note.title}
           </h3>
 
-          <p className={`text-sm whitespace-pre-wrap break-words line-clamp-5 ${note.completed ? 'text-white/60' : 'text-white/80'
+          <p className={`text-sm whitespace-pre-wrap  line-clamp-5 ${note.completed ? 'text-green-400 line-through' : ''
             }`}>
             {note.content}
           </p>
         </div>
       </div>
 
-      <div className="px-4 pb-4 flex justify-between items-center border-t border-white/10">
-        <span className="text-xs text-white/50">
+      <div className="px-4 pb-4 flex justify-between items-center border-t border-white ">
+        <span className={`text-xs ${note.completed ? "text-green-400 line-through" : ""}`}>
           {formatDate(note.lastModified || note.time)}
         </span>
 
@@ -79,7 +83,7 @@ export default function CardNote({ note, onEdit }) {
                 e.stopPropagation();
                 onEdit();
               }}
-              className="p-1.5 text-warning-400 hover:bg-warning-500/20 rounded transition-colors"
+              className="p-1.5 text-green-300 hover:text-green-400 rounded transition-colors"
               title="Edit note"
             >
               <EditIcon fontSize="small" />
@@ -90,7 +94,7 @@ export default function CardNote({ note, onEdit }) {
               e.stopPropagation();
               handleDelete();
             }}
-            className="p-1.5 text-error-400 hover:bg-error-500/20 rounded transition-colors"
+            className="p-1.5 text-red-300 hover:text-red-400  rounded transition-colors"
             title="Delete note"
           >
             <DeleteIcon fontSize="small" />
@@ -98,5 +102,6 @@ export default function CardNote({ note, onEdit }) {
         </div>
       </div>
     </div>
+
   );
 }
