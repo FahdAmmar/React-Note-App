@@ -265,7 +265,7 @@ export default function ResponsiveDrawer() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value.slice(0, 50))}
                 placeholder="Search notes..."
-                className="w-full py-2 pl-10 pr-4 bg-black/10 rounded-lg focus:bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+                className="w-full py-2 pl-10 pr-4 bg-black/10 rounded-lg focus:bg-black/20 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors text-white"
                 aria-label="Search notes"
               />
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-200/70" />

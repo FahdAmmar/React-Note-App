@@ -92,8 +92,8 @@ This project is open-source and available under the [MIT License](LICENSE).
 
 **Your Name**  
 - Email: www.fahedammar2000@gmail.com
-- LinkedIn: [Your Profile](https://www.linkedin.com/in/fahd-ammar-2b30993b0/)  
-- GitHub: [Your Username](https://github.com/FahdAmmar)
+- LinkedIn:https://www.linkedin.com/in/fahd-ammar-2b30993b0
+- GitHub: https://github.com/FahdAmmar
 
 ---
 
