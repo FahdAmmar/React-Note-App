@@ -88,21 +88,11 @@ This project is open-source and available under the [MIT License](LICENSE).
 - [Material UI](https://mui.com/) - For ready-made components
 - [Lucide React](https://lucide.dev/) - For modern icons
 
-## 📬 Contact
-
-**Your Name**  
-- Email: example@example.com  
-- LinkedIn: [Your Profile](https://linkedin.com/in/yourprofile)  
-- GitHub: [Your Username](https://github.com/yourusername)
-
----
-
 <div align="center">
 
 **Built with ❤️ using modern technologies 🚀**
 
 </div>
-```
 
 ## 📬 Contact
 
