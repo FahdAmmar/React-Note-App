@@ -1,38 +1,16 @@
-
-import NoteMain from "./components/NoteMain.jsx"
 import './App.css'
-
-import { useState, useEffect } from 'react';
-import MainContext from './ContextFolder/MainContext.jsx';
-
-
-const info = [
-  {
-    id: 1,
-    title: "Sample Note 1",
-    content: "This is the content of sample note 1.",
-    complated: false,
-    time:""
-  },
- 
-]
-
+import { useState } from 'react';
+import ResponsiveDrawer from "./components/ResponsiveDrawer"
+import MainContext from './ContextFolder/MainContext';
 
 
 function App() {
-  const [notes, setNotes] = useState(info);
-
-
-
-
-
-
-
+  const [notes, setNotes] = useState([]);
 
   return (
     <>
       <MainContext.Provider value={{ notes, setNotes }}>
-        <NoteMain />
+        <ResponsiveDrawer />
       </MainContext.Provider>
     </>
   )
