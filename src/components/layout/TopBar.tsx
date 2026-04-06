@@ -14,7 +14,8 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ onDrawerToggle, searchQuery, onSearchChange, onAddNote }) => {
-    const { toggleTheme, isDarkMode } = useTheme();
+    const { theme, toggleTheme, isDarkMode } = useTheme();
+    console.log(theme)
 
     return (
         <AppBar
@@ -79,6 +80,10 @@ const TopBar: React.FC<TopBarProps> = ({ onDrawerToggle, searchQuery, onSearchCh
                     <IconButton onClick={toggleTheme} sx={{ ml: 1 }}>
                         {isDarkMode ? '🌙' : '☀️'}
                     </IconButton>
+
+                    <button onClick={toggleTheme}>
+                        تغيير إلى الوضع {isDarkMode ? 'الفاتح' : 'الداكن'}
+                    </button>
                 </Box>
             </Toolbar>
         </AppBar>

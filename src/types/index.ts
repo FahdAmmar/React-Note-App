@@ -5,7 +5,7 @@ export interface Note {
     id: string;
     title: string;
     content: string;
-    completed: boolean; // تم تصحيح التسمية من complated
+    completed: boolean;
     color: string;
     date: string;
 }
@@ -17,3 +17,12 @@ export type NotesAction =
     | { type: 'UPDATE_NOTE'; payload: Note }       // تعديل ملاحظة موجودة
     | { type: 'DELETE_NOTE'; payload: string }     // حذف ملاحظة (نستخدم ID فقط)
     | { type: 'TOGGLE_NOTE'; payload: string };    // تغيير حالة الملاحظة (مكتملة/غير مكتملة)
+
+export interface NotesState {
+    notes: Note[];
+}
+export interface NotesContextType {
+    state: NotesState;
+    dispatch: React.Dispatch<NotesAction>;
+    showToast: (message: string, type: 'success' | 'error') => void;
+}

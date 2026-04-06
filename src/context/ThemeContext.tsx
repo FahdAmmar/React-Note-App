@@ -1,40 +1,111 @@
-// src/context/ThemeContext.tsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+    ReactNode,
+} from "react";
 
-// تعريف نوع بيانات الثيم
+/* ================================
+   1️⃣ تعريف أنواع الثيم المتاحة
+================================ */
+
+export type Theme = "light" | "dark";
+
+/* ================================
+   2️⃣ تعريف شكل البيانات داخل Context
+================================ */
+
 interface ThemeContextType {
-    theme: string;        // اسم الثيم 'light' أو 'dark'
-    toggleTheme: () => void; // دالة التبديل
-    isDarkMode: boolean;  // حالة منطقية هل الوضع داكن؟
+    theme: Theme;
+    toggleTheme: () => void;
+    isDarkMode: boolean;
 }
 
-// إنشاء الـ Context
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+/* ================================
+   3️⃣ إنشاء Context
+   القيمة الافتراضية null لزيادة الأمان
+================================ */
 
-// هوك مخصص لاستخدام الثيم
-export const useTheme = () => {
-    const context = useContext(ThemeContext);
-    if (!context) throw new Error('useTheme must be used within ThemeProvider');
-    return context;
+const ThemeContext = createContext<ThemeContextType | null>(null);
+
+/* ================================
+   4️⃣ Props الخاصة بالـ Provider
+================================ */
+
+interface ThemeProviderProps {
+    children: ReactNode;
+}
+
+/* ================================
+   5️⃣ دالة للحصول على الثيم الابتدائي
+   - تقرأ من localStorage
+   - أو من system preference
+================================ */
+
+const getInitialTheme = (): Theme => {
+    if (typeof window === "undefined") return "dark";
+
+    const savedTheme = localStorage.getItem("app-theme") as Theme | null;
+
+    if (savedTheme) return savedTheme;
+
+    const systemPrefersDark = window.matchMedia(
+        "(prefers-color-scheme: dark)"
+    ).matches;
+
+    return systemPrefersDark ? "dark" : "light";
 };
 
-// مكون الموفر
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // قراءة الثيم المحفوظ أو استخدام الافتراضي
-    const [theme, setTheme] = useState<string>(() => localStorage.getItem('app-theme') || 'light');
+/* ================================
+   6️⃣ Theme Provider
+================================ */
 
-    // تحديث سمة الـ HTML وحفظ التفضيل
+export const ThemeProvider = ({ children }: ThemeProviderProps) => {
+    const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+    /* تحديث الثيم في DOM + localStorage */
+
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('app-theme', theme);
+        document.documentElement.dataset.theme = theme;
+        localStorage.setItem("app-theme", theme);
     }, [theme]);
 
-    // دالة التبديل
-    const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+    /* تبديل الثيم */
+
+    const toggleTheme = () => {
+        setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    };
+
+    /* استخدام useMemo لتقليل re-renders */
+
+    const value = useMemo(
+        () => ({
+            theme,
+            toggleTheme,
+            isDarkMode: theme === "dark",
+        }),
+        [theme]
+    );
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, isDarkMode: theme === 'dark' }}>
+        <ThemeContext.Provider value={value}>
             {children}
         </ThemeContext.Provider>
     );
+};
+
+/* ================================
+   7️⃣ Custom Hook للوصول للثيم
+================================ */
+
+export const useTheme = () => {
+    const context = useContext(ThemeContext);
+
+    if (!context) {
+        throw new Error("useTheme must be used within ThemeProvider");
+    }
+
+    return context;
 };
