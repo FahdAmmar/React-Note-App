@@ -1,111 +1,56 @@
-import {
+// =====================================================
+// Context لإدارة الثيم (Light / Dark Mode)
+// يُتيح هذا الـ Context مشاركة حالة الثيم
+// بين جميع مكونات التطبيق دون تمرير props يدوياً
+// =====================================================
+
+import React, {
     createContext,
     useContext,
-    useEffect,
-    useMemo,
     useState,
-    ReactNode,
+    useCallback,
+    type ReactNode,
 } from "react";
 
-/* ================================
-   1️⃣ تعريف أنواع الثيم المتاحة
-================================ */
-
-export type Theme = "light" | "dark";
-
-/* ================================
-   2️⃣ تعريف شكل البيانات داخل Context
-================================ */
-
+// تعريف شكل بيانات الـ Context
 interface ThemeContextType {
-    theme: Theme;
-    toggleTheme: () => void;
-    isDarkMode: boolean;
+    isDark: boolean;          // هل الوضع الداكن مفعّل؟
+    toggleTheme: () => void;  // دالة تبديل الثيم
 }
 
-/* ================================
-   3️⃣ إنشاء Context
-   القيمة الافتراضية null لزيادة الأمان
-================================ */
+// إنشاء الـ Context مع قيمة افتراضية
+const ThemeContext = createContext<ThemeContextType>({
+    isDark: false,
+    toggleTheme: () => { },
+});
 
-const ThemeContext = createContext<ThemeContextType | null>(null);
+// Hook مخصص للوصول إلى الثيم من أي مكون
+export const useTheme = () => useContext(ThemeContext);
 
-/* ================================
-   4️⃣ Props الخاصة بالـ Provider
-================================ */
+// Provider يُغلّف التطبيق بأكمله لتوفير بيانات الثيم
+export const ThemeProvider: React.FC<{ children: ReactNode }> = ({
+    children,
+}) => {
+    // حالة الثيم - false تعني Light Mode
+    const [isDark, setIsDark] = useState(false);
 
-interface ThemeProviderProps {
-    children: ReactNode;
-}
-
-/* ================================
-   5️⃣ دالة للحصول على الثيم الابتدائي
-   - تقرأ من localStorage
-   - أو من system preference
-================================ */
-
-const getInitialTheme = (): Theme => {
-    if (typeof window === "undefined") return "dark";
-
-    const savedTheme = localStorage.getItem("app-theme") as Theme | null;
-
-    if (savedTheme) return savedTheme;
-
-    const systemPrefersDark = window.matchMedia(
-        "(prefers-color-scheme: dark)"
-    ).matches;
-
-    return systemPrefersDark ? "dark" : "light";
-};
-
-/* ================================
-   6️⃣ Theme Provider
-================================ */
-
-export const ThemeProvider = ({ children }: ThemeProviderProps) => {
-    const [theme, setTheme] = useState<Theme>(getInitialTheme);
-
-    /* تحديث الثيم في DOM + localStorage */
-
-    useEffect(() => {
-        document.documentElement.dataset.theme = theme;
-        localStorage.setItem("app-theme", theme);
-    }, [theme]);
-
-    /* تبديل الثيم */
-
-    const toggleTheme = () => {
-        setTheme((prev) => (prev === "light" ? "dark" : "light"));
-    };
-
-    /* استخدام useMemo لتقليل re-renders */
-
-    const value = useMemo(
-        () => ({
-            theme,
-            toggleTheme,
-            isDarkMode: theme === "dark",
-        }),
-        [theme]
-    );
+    // دالة تبديل الثيم مع useCallback لتجنب إعادة الإنشاء غير الضرورية
+    const toggleTheme = useCallback(() => {
+        setIsDark((prev) => {
+            const next = !prev;
+            // تطبيق كلاس Tailwind على عنصر <html> لتفعيل Dark Mode
+            if (next) {
+                document.documentElement.classList.add("dark");
+            } else {
+                document.documentElement.classList.remove("dark");
+            }
+            return next;
+        });
+    }, []);
 
     return (
-        <ThemeContext.Provider value={value}>
+        <ThemeContext.Provider value={{ isDark, toggleTheme }}>
             {children}
         </ThemeContext.Provider>
     );
-};
-
-/* ================================
-   7️⃣ Custom Hook للوصول للثيم
-================================ */
-
-export const useTheme = () => {
-    const context = useContext(ThemeContext);
-
-    if (!context) {
-        throw new Error("useTheme must be used within ThemeProvider");
-    }
-
-    return context;
 };
